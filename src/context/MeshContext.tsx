@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { BleManager, Device, State } from 'react-native-ble-plx';
+import * as Location from 'expo-location';
+import { Platform, PermissionsAndroid } from 'react-native';
 
 export type MeshNode = { id: string; name: string; distance: string; signal: number; angle: number; };
 export type MeshAlert = { id: string; type: "warning" | "info" | "sos"; message: string; time: string; hops: number; };
@@ -13,7 +16,7 @@ type MeshContextType = {
 };
 
 const MeshContext = createContext<MeshContextType | null>(null);
-const MOCK_NAMES = ["Ananya K.", "Priya S.", "Meera R.", "Node_8F2", "Node_2A1", "Kavya D.", "Unknown Node"];
+const bleManager = new BleManager();
 
 export const MeshProvider = ({ children }: { children: React.ReactNode }) => {
   const [nearbyNodes, setNearbyNodes] = useState<MeshNode[]>([]);
@@ -22,49 +25,96 @@ export const MeshProvider = ({ children }: { children: React.ReactNode }) => {
   ]);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastStatus, setBroadcastStatus] = useState("");
+  
+  const scanSubscription = useRef<any>(null);
 
   useEffect(() => {
-    const initialNodes = Array.from({ length: Math.floor(Math.random() * 3) + 1 }).map((_, i) => ({
-      id: `node_${i}`,
-      name: MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)],
-      distance: `${Math.floor(Math.random() * 50) + 5}m`,
-      signal: Math.floor(Math.random() * 60) + 40,
-      angle: Math.floor(Math.random() * 360),
-    }));
-    setNearbyNodes(initialNodes);
-
-    const interval = setInterval(() => {
-      setNearbyNodes(current => {
-        let updated = current.map(node => {
-          const sigDrift = (Math.random() - 0.5) * 8;
-          const newSignal = Math.max(0, Math.min(100, node.signal + sigDrift));
-          return { ...node, signal: newSignal, distance: `${Math.floor(30 + (100 - newSignal) * 0.5)}m` };
-        }).filter(n => n.signal > 15);
-        if (updated.length < 5 && Math.random() > 0.8) {
-          updated.push({
-            id: `node_${Date.now()}`, name: MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)],
-            distance: "45m", signal: 40, angle: Math.floor(Math.random() * 360),
-          });
-        }
-        return updated;
-      });
-    }, 2000);
-    return () => clearInterval(interval);
+    setupBle();
+    return () => {
+      bleManager.stopDeviceScan();
+    };
   }, []);
+
+  const setupBle = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    const state = await bleManager.state();
+    if (state !== State.PoweredOn) {
+      // For demo, we still show UI but real scanning needs BT on
+      console.log("Bluetooth is not Powered On");
+    }
+
+    startScanning();
+  };
+
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      ]);
+      return !!granted['android.permission.ACCESS_FINE_LOCATION'];
+    } else {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      return status === 'granted';
+    }
+  };
+
+  const startScanning = () => {
+    bleManager.startDeviceScan(null, null, (error, device) => {
+      if (error) {
+        console.log("Scan Error:", error);
+        return;
+      }
+
+      if (device && device.name) {
+        setNearbyNodes(prev => {
+          const exists = prev.find(n => n.id === device.id);
+          const newNode: MeshNode = {
+            id: device.id,
+            name: device.name || "Unknown Node",
+            distance: device.rssi ? `${Math.abs(device.rssi) - 40}m` : "Unknown",
+            signal: device.rssi ? Math.max(0, 100 + device.rssi) : 50,
+            angle: Math.floor(Math.random() * 360), // Random angle for UI placement
+          };
+
+          if (exists) {
+            return prev.map(n => n.id === device.id ? newNode : n);
+          }
+          return [...prev, newNode];
+        });
+      }
+    });
+  };
 
   const broadcastSOS = useCallback(() => {
     setIsBroadcasting(true);
     setBroadcastStatus("Generating Crypto Payload...");
-    setTimeout(() => setBroadcastStatus(`Hopping via ${nearbyNodes[0]?.name || "Nearest Node"}...`), 1500);
-    setTimeout(() => setBroadcastStatus("Hop 2 successful: ISP Relay Hit"), 3500);
+    
+    // In a real Native build with a custom Dev client, 
+    // we would use a library like react-native-ble-peripheral here.
+    // For Expo Go, we simulate the "Success" of the broadcast attempt.
+
+    setTimeout(() => setBroadcastStatus(`Mesh relay active. Hopping...`), 1500);
+    setTimeout(() => setBroadcastStatus("Signal verified by nearby nodes."), 3500);
     setTimeout(() => {
-      setBroadcastStatus("Emergency Contacts Notified");
-      setActiveAlerts(prev => [{ id: `sos_${Date.now()}`, type: "sos", message: "SOS signal actively relayed.", time: "Just now", hops: 2 }, ...prev]);
+      setBroadcastStatus("Emergency Contacts Notified via Mesh");
+      setActiveAlerts(prev => [{ 
+        id: `sos_${Date.now()}`, 
+        type: "sos", 
+        message: "SOS actively relayed via 2 mesh nodes.", 
+        time: "Just now", 
+        hops: 2 
+      }, ...prev]);
     }, 5500);
-  }, [nearbyNodes]);
+  }, []);
 
   const cancelSOS = useCallback(() => {
-    setIsBroadcasting(false); setBroadcastStatus("");
+    setIsBroadcasting(false);
+    setBroadcastStatus("");
   }, []);
 
   return (

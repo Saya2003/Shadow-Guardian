@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "temp-expo",
-    "slug": "temp-expo",
+    "name": "Shadow Guardian",
+    "slug": "shadow-guardian",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.saya.shadowguardian",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Allow Shadow Guardian to use Bluetooth to find nearby nodes and send SOS signals offline.",
+        "NSBluetoothPeripheralUsageDescription": "Allow Shadow Guardian to act as a mesh node to relay distress signals.",
+        "NSLocationWhenInUseUsageDescription": "Location is required to scan for nearby Bluetooth devices."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +27,17 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE",
+        "BLUETOOTH_CONNECT"
+      ],
+      "package": "com.saya.shadowguardian"
     },
     "web": {
       "favicon": "./assets/favicon.png"
