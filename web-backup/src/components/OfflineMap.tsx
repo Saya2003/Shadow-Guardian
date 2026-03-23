@@ -1,7 +1,10 @@
 import { MapPin, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 const OfflineMap = () => {
+  const [location, setLocation] = useState<{coords: string, name: string, time: string} | null>(null);
+
   return (
     <section className="fade-in-up" style={{ animationDelay: "0.3s" }}>
       <h2 className="text-base font-semibold text-foreground mb-4">
@@ -43,14 +46,23 @@ const OfflineMap = () => {
 
         {/* Info bar */}
         <div className="flex items-center justify-between p-4 border-t border-border">
-          <div>
-            <p className="text-sm font-medium text-foreground">28.6139° N, 77.2090° E</p>
-            <p className="text-xs text-muted-foreground mt-0.5">New Delhi, India</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Updated</p>
-            <p className="text-xs text-foreground">2 min ago</p>
-          </div>
+          {location ? (
+            <>
+              <div>
+                <p className="text-sm font-medium text-foreground">{location.coords}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{location.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Updated</p>
+                <p className="text-xs text-foreground">{location.time}</p>
+              </div>
+            </>
+          ) : (
+            <div className="w-full">
+              <p className="text-sm font-medium text-foreground">Locating...</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Awaiting location data</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
