@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { View, Text } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, Users, Settings as SettingsIcon, Shield } from 'lucide-react-native';
@@ -57,7 +58,14 @@ export default function App() {
     setIsRegistered(registered === "true");
   };
 
-  if (isRegistered === null) return null; // Loading state
+  if (isRegistered === null) {
+     return (
+       <View className="flex-1 bg-background items-center justify-center">
+         <Shield size={64} color="#E11D48" className="animate-pulse" />
+         <Text className="text-muted-foreground mt-4 text-sm uppercase tracking-widest">Waking Mesh Hardware...</Text>
+       </View>
+     );
+  }
 
   return (
     <MeshProvider>

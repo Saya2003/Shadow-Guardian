@@ -3,7 +3,15 @@ import { BleManager, Device, State } from 'react-native-ble-plx';
 import * as Location from 'expo-location';
 import { Platform, PermissionsAndroid } from 'react-native';
 
-export type MeshNode = { id: string; name: string; distance: string; signal: number; angle: number; };
+export type MeshNode = { 
+  id: string; 
+  name: string; 
+  distance: string; 
+  signal: number; 
+  angle: number; 
+  lat?: number; 
+  lng?: number; 
+};
 export type MeshAlert = { id: string; type: "warning" | "info" | "sos"; message: string; time: string; hops: number; };
 
 type MeshContextType = {
@@ -20,9 +28,7 @@ const bleManager = new BleManager();
 
 export const MeshProvider = ({ children }: { children: React.ReactNode }) => {
   const [nearbyNodes, setNearbyNodes] = useState<MeshNode[]>([]);
-  const [activeAlerts, setActiveAlerts] = useState<MeshAlert[]>([
-    { id: "1", type: "warning", message: "Unlit alleyway reported near Station Road. Avoid area.", time: "2 hours ago", hops: 3 }
-  ]);
+  const [activeAlerts, setActiveAlerts] = useState<MeshAlert[]>([]);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastStatus, setBroadcastStatus] = useState("");
   
@@ -56,6 +62,7 @@ export const MeshProvider = ({ children }: { children: React.ReactNode }) => {
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       ]);
+      console.log("Mesh Permissions Status:", granted);
       return !!granted['android.permission.ACCESS_FINE_LOCATION'];
     } else {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -73,12 +80,20 @@ export const MeshProvider = ({ children }: { children: React.ReactNode }) => {
       if (device && device.name) {
         setNearbyNodes(prev => {
           const exists = prev.find(n => n.id === device.id);
+          
+          // Stable mock location based on device ID to prevent jumping on map
+          const seed = device.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const latOffset = ((seed % 100) / 10000) - 0.005;
+          const lngOffset = ((seed % 150) / 10000) - 0.007;
+
           const newNode: MeshNode = {
             id: device.id,
             name: device.name || "Unknown Node",
             distance: device.rssi ? `${Math.abs(device.rssi) - 40}m` : "Unknown",
             signal: device.rssi ? Math.max(0, 100 + device.rssi) : 50,
-            angle: Math.floor(Math.random() * 360), // Random angle for UI placement
+            angle: Math.floor(Math.random() * 360),
+            lat: latOffset,
+            lng: lngOffset
           };
 
           if (exists) {

@@ -9,7 +9,7 @@ export default function NearbyGuardians() {
     <View className="flex-1 mt-4">
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-base font-semibold text-foreground">Nearby Guardians</Text>
-        <View className="bg-online/10 px-2.py-1 rounded-sm border border-online/20">
+        <View className="bg-online/10 px-2 py-1 rounded-sm border border-online/20">
           <Text className="text-xs text-online">{nearbyNodes.length} in range</Text>
         </View>
       </View>

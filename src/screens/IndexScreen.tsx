@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ScrollView, Text } from 'react-native';
 import NearbyGuardians from '../components/NearbyGuardians';
 import SOSTrigger from '../components/SOSTrigger';
+import GuardianMap from '../components/GuardianMap';
 import { Shield } from 'lucide-react-native';
 
 export default function IndexScreen() {
@@ -21,6 +22,10 @@ export default function IndexScreen() {
 
         <View className="items-center py-4">
            <SOSTrigger />
+        </View>
+
+        <View className="mb-6">
+           <GuardianMap />
         </View>
         
         <View className="mt-0">
